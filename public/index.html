@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: sans-serif;
+        }
+
+        button {
+            background: transparent;
+            width: 100px;
+            height: 50px;
+            font-size: medium;
+            border-radius: 4px;
+            margin-bottom: 50px;
+        }
+
+        section {
+            width: 400px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .inner {
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+<section>
+    <button id="start">Start</button>
+    <button id="stop">Stop</button>
+    <p id="status"></p>
+    <p id="text"></p>
+</section>
+</body>
+<script>
+    const recordBtn = document.getElementById('start');
+    const stopBtn = document.getElementById('stop');
+
+    let recorder;
+    let audioChunks = [];
+
+    const handleAudioStream = (stream) => {
+        recorder = new MediaRecorder(stream, {mimeType: 'audio/ogg;codecs=opus'});
+        recorder.addEventListener('dataavailable', e => {
+            audioChunks.push(e.data);
+        });
+
+        recorder.addEventListener('stop', () => {
+            console.log(audioChunks);
+            const file = new File(audioChunks, "speech.ogg", { type: 'audio/ogg;codecs=opus' });
+            audioChunks = [];
+            const formData = new FormData();
+            formData.append('speech', file, 'speech.ogg');
+            fetch('/api/voice', {
+                method: 'post',
+                body: formData,
+            })
+        })
+    };
+
+    recordBtn.addEventListener('click', () => {
+        if (recorder) {
+            recorder.start(400);
+        }
+    });
+    // new Blob(audioChunks, { type: 'audio/ogg;codecs=opus' })
+    stopBtn.addEventListener('click', () => {
+        if (recorder && recorder.state === 'recording') {
+            recorder.stop();
+        }
+    });
+
+    navigator.mediaDevices.getUserMedia({audio: true}).then(handleAudioStream);
+
+</script>
+</html>
