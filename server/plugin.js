@@ -28,7 +28,7 @@ console.log(audio);
     const iamToken = await fetchIAMToken();
     const serviceMetadata = new grpc.Metadata();
     serviceMetadata.add('authorization', `Bearer ${iamToken}`);
-    const packageDefinition = protoLoader.loadSync(path.join(__dirname, './yandex/cloud/ai/stt/v2/stt_service.proto'),{
+    const packageDefinition = protoLoader.loadSync(path.join(__dirname, './stt_service.proto'),{
         includeDirs: ['node_modules/google-proto-files', __dirname]
     });
 
