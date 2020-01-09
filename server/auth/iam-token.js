@@ -8,7 +8,7 @@ async function fetchIAMToken() {
         .then(response => Promise.resolve(response.body))
 }
 
-const getTimeDifferenceInMinutes = (time1, time2) => ((time1 - time2) / 1000*60);
+const getTimeDifferenceInMinutes = (time1, time2) => ((time1 - time2) / 1000/60);
 
 const createTokenFetcher = () => {
     let TTL;
@@ -23,4 +23,6 @@ const createTokenFetcher = () => {
     }
 };
 
-module.exports = createTokenFetcher;
+const fetchIamToken = createTokenFetcher();
+
+module.exports = {getTimeDifferenceInMinutes, fetchIamToken};

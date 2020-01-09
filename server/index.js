@@ -1,7 +1,8 @@
 const Hapi = require('@hapi/hapi');
 const path = require('path');
 const inert = require('inert');
-const speechRecognition = require('./plugin');
+const speechToText = require('./sst/main');
+const textToSpeech = require('./tts/main');
 
 async function init() {
     const server = Hapi.Server({
@@ -31,9 +32,9 @@ async function init() {
     server.route({
         method: 'POST',
         path: '/api/voice',
-        handler: (request) => {
-            speechRecognition(request.payload);
-            return Promise.resolve('test');
+        handler: async (request, h) => {
+            const { speech } = request.payload;
+            return await speechToText(speech);
         },
         options: {
             payload: {
@@ -41,10 +42,21 @@ async function init() {
             }
         }
     });
+    server.route({
+        method: 'POST',
+        path: '/api/speech',
+        handler: async (request, h) => {
+            console.log(request.payload);
+            return h.response(await textToSpeech(request.payload));
+        },
+        options: {
+            payload: {
+                allow: 'text/plain',
+            }
+        }
+    });
 
     await server.start();
-
-
 
     console.log('Server running on %s', server.info.uri);
 }

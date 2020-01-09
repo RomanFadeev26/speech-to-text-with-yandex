@@ -33,58 +33,89 @@
         .inner {
             margin-top: 15px;
         }
+
+        audio {
+            display: none;
+        }
     </style>
 </head>
 <body>
 <section>
-    <button id="start">Start</button>
-    <button id="stop">Stop</button>
+    <button id="start">Record</button>
     <p id="status"></p>
     <p id="text"></p>
+    <audio id="audio" controls></audio>
 </section>
 </body>
 <script src="https://cdn.jsdelivr.net/npm/opus-media-recorder@latest/OpusMediaRecorder.umd.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/opus-media-recorder@latest/encoderWorker.umd.js"></script>
 <script>
-    window.MediaRecorder = OpusMediaRecorder;
+    if (!(window.MediaRecorder && window.MediaRecorder.isTypeSupported('audio/ogg;codecs=opus'))) {
+        console.log('media', window.MediaRecorder && window.MediaRecorder.isTypeSupported('audio/ogg;codecs=opus'));
+        window.MediaRecorder = OpusMediaRecorder;
+    }
 </script>
 <script>
+    const workerOptions = {
+        OggOpusEncoderWasmPath: 'https://cdn.jsdelivr.net/npm/opus-media-recorder@latest/OggOpusEncoder.wasm'
+    };
     const recordBtn = document.getElementById('start');
-    const stopBtn = document.getElementById('stop');
 
     let recorder;
     let audioChunks = [];
+    let isCanSending = true;
+
+    let statusBlock = document.getElementById('status');
+    let textBlock = document.getElementById('text');
+    let audioBlock = document.getElementById('audio');
+    let text = '';
+
+    const createStatus = status => `Status <span style="color: red;">${status}</span>`;
 
     const handleAudioStream = (stream) => {
-        recorder = new MediaRecorder(stream, {mimeType: 'audio/ogg;codecs=opus'}, {
-            OggOpusEncoderWasmPath: 'https://cdn.jsdelivr.net/npm/opus-media-recorder@latest/OggOpusEncoder.wasm',
-        });
+        recorder = new MediaRecorder(stream, {mimeType: 'audio/ogg;codecs=opus'}, workerOptions);
         recorder.addEventListener('dataavailable', e => {
-            audioChunks.push(e.data);
-        });
-
-        recorder.addEventListener('stop', () => {
-            console.log(audioChunks);
-            const file = new File(audioChunks, "speech.ogg", { type: 'audio/ogg;codecs=opus' });
+            const file = new File([e.data], "speech.ogg", { type: 'audio/ogg;codecs=opus' });
             audioChunks = [];
             const formData = new FormData();
             formData.append('speech', file, 'speech.ogg');
-            fetch('/api/voice', {
+
+            audioChunks.push(formData);
+
+            if(isCanSending && recorder.state === 'recording') {
+                isCanSending = false;
+                fetch('/api/voice', {
+                    method: 'post',
+                    body: audioChunks.shift(),
+                }).then(resp => resp.json()).then(({isFinal, result}) => {
+                    if(isFinal && recorder.state === 'recording') {
+                        recorder.stop();
+                        statusBlock.innerHTML = createStatus('stop record');
+                        text = result;
+                    }
+                    isCanSending = true;
+                    textBlock.innerHTML = result;
+                });
+            }
+        });
+
+        recorder.addEventListener('stop', () => {
+            fetch('/api/speech', {
                 method: 'post',
-                body: formData,
-            })
-        })
+                body: text,
+            }).then(response => response.blob()).then(result => {
+
+                audioBlock.src = URL.createObjectURL(result);
+                audioBlock.play();
+            });
+        });
+
     };
 
     recordBtn.addEventListener('click', () => {
         if (recorder) {
             recorder.start(400);
-        }
-    });
-    // new Blob(audioChunks, { type: 'audio/ogg;codecs=opus' })
-    stopBtn.addEventListener('click', () => {
-        if (recorder && recorder.state === 'recording') {
-            recorder.stop();
+            statusBlock.innerHTML = createStatus('start record');
         }
     });
 
