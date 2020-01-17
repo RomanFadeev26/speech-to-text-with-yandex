@@ -1,7 +1,7 @@
 const jose = require('node-jose');
 const fs = require('fs');
 
-const privateKey = fs.readFileSync(require.resolve('./private.pem'));
+const privateKey = fs.readFileSync(require.resolve('../keys/private.pem'));
 
 const keyId = 'ajef6v4vsibimde7ulkm';
 

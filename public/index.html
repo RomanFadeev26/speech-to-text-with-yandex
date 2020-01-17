@@ -30,10 +30,6 @@
             flex-direction: column;
         }
 
-        .inner {
-            margin-top: 15px;
-        }
-
         audio {
             display: none;
         }
@@ -91,7 +87,7 @@
                     if(isFinal && recorder.state === 'recording') {
                         recorder.stop();
                         statusBlock.innerHTML = createStatus('stop record');
-                        text = result;
+                        text = result.split(' ').reverse().join(' ');
                     }
                     isCanSending = true;
                     textBlock.innerHTML = result;

@@ -24,7 +24,7 @@ async function plugin(audioBinary) {
     if(!grpc) {
         grpc = new Grpc({
             iamToken,
-            pathToRootSert: path.join(__dirname, './roots.pem'),
+            pathToRootSert: path.join(__dirname, '../keys/roots.pem'),
             pathToProto: path.join(__dirname, './stt_service.proto')
         });
         grpc.createGRPCStream();
